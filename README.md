@@ -114,12 +114,34 @@ For users who prefer local control, data privacy, or customization, this option 
 
 #### 2. Quick Start
 
+**Option A: Using Startup Scripts (Recommended)**
+
+```bash
+git clone https://github.com/eigent-ai/eigent.git
+cd eigent
+
+# macOS/Linux
+./start.sh
+
+# Windows
+start.bat
+```
+
+The startup scripts will automatically:
+- Check prerequisites (Node.js, npm)
+- Install dependencies if needed
+- Start the development server
+
+**Option B: Manual Start**
+
 ```bash
 git clone https://github.com/eigent-ai/eigent.git
 cd eigent
 npm install
 npm run dev
 ```
+
+For more details on startup scripts, see [STARTUP.md](./STARTUP.md).
 
 #### 3. Local Development (Use the version that is completely separated from the cloud service)
 [server/README_EN.md](./server/README_EN.md)
