@@ -54,3 +54,6 @@ __pycache__/
 *$py.class
 *.so
 .Python
+congress_tracker/reports/*.md
+congress_tracker/reports/*.json
+congress_tracker/logs/
