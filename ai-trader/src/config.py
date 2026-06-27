@@ -83,6 +83,7 @@ class Config:
     alpaca_api_key: str = field(default_factory=lambda: _get("ALPACA_API_KEY"))
     alpaca_secret_key: str = field(default_factory=lambda: _get("ALPACA_SECRET_KEY"))
     alpaca_paper_trade: bool = field(default_factory=lambda: _get_bool("ALPACA_PAPER_TRADE", True))
+    execution_backend: str = field(default_factory=lambda: _get("EXECUTION_BACKEND", "paper").lower())
 
     # Data
     polygon_api_key: str = field(default_factory=lambda: _get("POLYGON_API_KEY"))
@@ -95,6 +96,7 @@ class Config:
     )
     enable_polymarket: bool = field(default_factory=lambda: _get_bool("ENABLE_POLYMARKET", False))
     enable_finrl: bool = field(default_factory=lambda: _get_bool("ENABLE_FINRL", False))
+    enable_fundamentals: bool = field(default_factory=lambda: _get_bool("ENABLE_FUNDAMENTALS", True))
 
     # Account / sizing
     starting_equity_usd: float = field(

@@ -76,35 +76,34 @@ class PaperBroker(Broker):
         return self.cash + mv
 
 
-class AlpacaMCPBroker(Broker):  # pragma: no cover - requires MCP server + keys
-    """Thin wrapper that routes orders through the Alpaca MCP server.
-
-    Connection is established lazily. Intended for paper trading first
-    (ALPACA_PAPER_TRADE=true). See plan Section 5 for mcp.json.
-    """
-
-    def __init__(self, config):
-        self.config = config
-        self._session = None
-
-    def _ensure(self):
-        if self._session is None:
-            raise RuntimeError(
-                "AlpacaMCPBroker requires a running Alpaca MCP server and "
-                "langchain-mcp-adapters. Install extras: pip install '.[live]' and configure "
-                "mcp.json (see README)."
-            )
-
-    def submit(self, order: OrderRequest) -> Fill:
-        self._ensure()
-        raise NotImplementedError
-
-    def equity(self) -> float:
-        self._ensure()
-        raise NotImplementedError
-
-
 def get_broker(config=None) -> Broker:
-    """Default to the paper simulator. Live/paper-via-Alpaca is opt-in and gated."""
+    """Select the execution backend from config.execution_backend.
+
+    * ``paper`` (default)  -> in-memory PaperBroker (no network)
+    * ``alpaca_sdk``       -> direct alpaca-py client (robust deterministic fills)
+    * ``alpaca_mcp``       -> official Alpaca MCP server (the LLM-native order path)
+
+    Any missing optional dependency or credential falls back to the paper simulator, so the
+    app never hard-crashes on a misconfigured broker.
+    """
     start = config.starting_equity_usd if config else 100_000.0
+    backend = getattr(config, "execution_backend", "paper") if config else "paper"
+
+    if backend == "alpaca_sdk":
+        try:
+            from .alpaca_sdk import AlpacaBroker
+
+            return AlpacaBroker(config)
+        except Exception as e:  # pragma: no cover - depends on env
+            print(f"[broker] alpaca_sdk unavailable ({e}); falling back to paper.")
+    elif backend == "alpaca_mcp":
+        try:
+            import langchain_mcp_adapters  # noqa: F401  ensure dep before connecting
+
+            from .alpaca_mcp import AlpacaMCPBroker
+
+            return AlpacaMCPBroker(config)
+        except Exception as e:  # pragma: no cover - depends on env
+            print(f"[broker] alpaca_mcp unavailable ({e}); falling back to paper.")
+
     return PaperBroker(starting_cash=start)

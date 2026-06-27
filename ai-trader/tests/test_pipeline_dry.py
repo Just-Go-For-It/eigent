@@ -33,6 +33,14 @@ def test_dry_run_completes_and_logs_decisions():
     assert report.equity > 0
 
 
+def test_dry_run_includes_fundamentals_analyst_node():
+    cfg = _dry_config()  # no FINANCIAL_DATASETS_API_KEY -> mock fundamentals
+    broker = PaperBroker(starting_cash=cfg.starting_equity_usd)
+    report = run_once(config=cfg, strategy_name="ma_crossover", broker=broker)
+    traces = [line for d in report.decisions for line in d.trace]
+    assert any("[fundamentals-analyst]" in line for line in traces)
+
+
 def test_dry_run_respects_riskguard_when_market_closed():
     cfg = _dry_config()
     cfg.limits.market_hours_only = True  # likely outside RTH in CI -> buys rejected

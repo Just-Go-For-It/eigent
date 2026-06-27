@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
+from ..data.fundamentals import FundamentalsProvider, score_metrics
 from ..risk.guard import OrderRequest, RiskGuard
 from ..strategies.base import Signal, Strategy
 from .llm import LLM
@@ -32,15 +33,33 @@ class Decision:
 
 
 class TradingFirm:
-    def __init__(self, llm: LLM, guard: RiskGuard, strategy: Strategy, config):
+    def __init__(
+        self,
+        llm: LLM,
+        guard: RiskGuard,
+        strategy: Strategy,
+        config,
+        fundamentals: FundamentalsProvider | None = None,
+    ):
         self.llm = llm
         self.guard = guard
         self.strategy = strategy
         self.config = config
+        self.fundamentals = fundamentals
 
     # --- individual agents ----------------------------------------------------
     def _analyst(self, symbol: str, df: pd.DataFrame) -> Signal:
         return self.strategy.latest_signal(symbol, df)
+
+    def _fundamentals_view(self, symbol: str) -> tuple[float, str, list[str]]:
+        """Return (bounded score adjustment, rationale, news headlines)."""
+        if not self.config.enable_fundamentals or self.fundamentals is None:
+            return 0.0, "fundamentals: disabled", []
+        metrics = self.fundamentals.get_metrics(symbol)
+        score_adj, rationale = score_metrics(metrics)
+        news = self.fundamentals.get_news(symbol, limit=3)
+        titles = [n.get("title", "") for n in news if n.get("title")][:3]
+        return score_adj, rationale, titles
 
     def _debate(self, signal: Signal, df: pd.DataFrame) -> float:
         """Bull/bear adjustment to conviction using simple momentum confirmation."""
@@ -59,10 +78,19 @@ class TradingFirm:
         score = self._debate(signal, df)
         d.log("debate", f"bull-bear score={score:+.3f}")
 
-        # LLM narrative (mock or Claude) — commentary only, not the decision.
+        # Fundamentals + news analyst (real Financial Datasets data when a key is set).
+        f_adj, f_rationale, headlines = self._fundamentals_view(symbol)
+        d.log("fundamentals-analyst", f"{f_rationale} (adj={f_adj:+.2f})")
+        if headlines:
+            d.log("news", " | ".join(headlines))
+        score += f_adj
+        d.log("debate", f"score after fundamentals={score:+.3f}")
+
+        # LLM narrative (mock or Claude) — reasons over the real data; commentary, not decision.
         note = self.llm.complete(
             system="You are a risk-aware trading analyst. Be concise.",
-            prompt=f"Symbol {symbol}: signal={signal.action}, score={score:+.2f}. "
+            prompt=f"Symbol {symbol}: technical signal={signal.action}, combined score={score:+.2f}. "
+            f"{f_rationale}. Headlines: {headlines or 'none'}. "
             f"One sentence: is acting prudent now?",
             model=getattr(self.config, "model_smart", None),
         )

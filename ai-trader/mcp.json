@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "alpaca": {
-      "command": "python",
-      "args": ["-m", "alpaca_mcp_server"],
+      "command": "uvx",
+      "args": ["alpaca-mcp-server"],
       "env": {
         "ALPACA_API_KEY": "${ALPACA_API_KEY}",
         "ALPACA_SECRET_KEY": "${ALPACA_SECRET_KEY}",

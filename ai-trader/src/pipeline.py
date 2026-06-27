@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from .agents.firm import Decision, TradingFirm
 from .agents.llm import get_llm
 from .config import Config, load_config
+from .data.fundamentals import get_fundamentals
 from .data.providers import get_provider
 from .execution.broker import PaperBroker, get_broker
 from .risk.guard import RiskGuard, SafetyMode
@@ -37,7 +38,10 @@ def run_once(
     strategy = REGISTRY[strategy_name]()
     broker = broker or get_broker(config)
 
-    firm = TradingFirm(llm=llm, guard=guard, strategy=strategy, config=config)
+    fundamentals = get_fundamentals(config)
+    firm = TradingFirm(
+        llm=llm, guard=guard, strategy=strategy, config=config, fundamentals=fundamentals
+    )
 
     decisions: list[Decision] = []
     fills = 0

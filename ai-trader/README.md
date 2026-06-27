@@ -33,16 +33,36 @@ broker** — it works anywhere, places no real orders, and prints the full agent
 ## Running with real (paper) data + Claude
 
 ```bash
-cp .env.example .env           # fill ANTHROPIC_API_KEY + ALPACA_* (paper keys)
+cp .env.example .env           # fill ANTHROPIC_API_KEY + ALPACA_* (paper) [+ FINANCIAL_DATASETS_API_KEY]
 pip install ".[live]"
-# Start Alpaca's official MCP server (see mcp.json):
-#   git clone https://github.com/alpacahq/alpaca-mcp-server && follow its README
 python -m src.main             # uses real Alpaca paper data; ALPACA_PAPER_TRADE=true
 python -m src.worker           # always-on scheduled loop (15-min cadence in market hours)
 ```
 
 Keys are read from the environment / `.env`. With no keys, every component falls back to a
 safe mock, so the project is always runnable.
+
+### Execution backends (`EXECUTION_BACKEND`)
+| Value | Path | Notes |
+|---|---|---|
+| `paper` (default) | in-memory simulator | no network, used by tests/dry runs |
+| `alpaca_mcp` | official Alpaca **MCP server** | `uvx alpaca-mcp-server` (stdio); the LLM-native order path |
+| `alpaca_sdk` | `alpaca-py` direct REST | **recommended for live** — structured fills, robust parsing |
+
+For `alpaca_mcp`, start the server (it reads the same `ALPACA_*` env, paper by default):
+```bash
+uvx alpaca-mcp-server          # see mcp.json; or: pipx run alpaca-mcp-server
+```
+Both real backends **refuse to trade live** unless `ALPACA_PAPER_TRADE=false` **and**
+`TRADING_MODE=live`, and RiskGuard still gates every order. A missing dep/credential safely
+falls back to the paper simulator.
+
+### Fundamentals & news analyst
+When `FINANCIAL_DATASETS_API_KEY` is set (and `ENABLE_FUNDAMENTALS=true`, the default), the
+firm adds a real fundamentals/news node (`src/data/fundamentals.py`) that pulls company
+metrics + headlines from the [Financial Datasets API](https://docs.financialdatasets.ai) and
+nudges the bull/bear conviction (bounded; it never bypasses risk). Without a key it uses a
+neutral mock so dry runs stay offline.
 
 ---
 
@@ -71,7 +91,8 @@ Scheduler / TradingView webhook (optional signal)
 | `src/strategies/` | `Strategy` interface + MA-crossover + options-income scanner |
 | `src/backtest/` | Vectorized backtester (no look-ahead, costs) + CLI |
 | `src/agents/` | LLM wrapper (Claude/mock) + the trading-firm pipeline |
-| `src/execution/` | Paper broker (sim) + Alpaca-MCP broker (lazy) |
+| `src/data/fundamentals.py` | Fundamentals + news analyst (Financial Datasets API; lazy) |
+| `src/execution/` | Paper sim + `alpaca_mcp.py` (MCP) + `alpaca_sdk.py` (direct) + async bridge |
 | `src/pipeline.py` | One wired pass of the loop (shared by CLI + worker) |
 | `src/worker.py` | APScheduler always-on loop (the VPS/Railway brain) |
 | `src/api/app.py` | FastAPI status/approve/webhook (bearer-auth) |

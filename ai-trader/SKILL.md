@@ -23,8 +23,13 @@ non-bypassable `RiskGuard` controls all money.
    `generate_signals(df) -> Series[{0,1}]`, register it in `src/strategies/__init__.py:REGISTRY`,
    and add a backtest assertion in `tests/test_strategy.py`.
 2. **New data source:** subclass `src/data/providers.py:DataProvider`.
-3. **New broker:** subclass `src/execution/broker.py:Broker`. Keep `ALPACA_PAPER_TRADE=true`.
-4. **Never weaken `src/risk/guard.py`.** All orders must pass `RiskGuard.check`. If you change
+3. **New broker:** subclass `src/execution/broker.py:Broker` and wire it into `get_broker`.
+   Existing backends: `paper` (sim), `alpaca_mcp` (MCP server), `alpaca_sdk` (direct REST),
+   chosen via `EXECUTION_BACKEND`. Keep `ALPACA_PAPER_TRADE=true`.
+4. **New analyst signal:** the fundamentals/news node lives in `src/data/fundamentals.py`
+   (`FundamentalsProvider`); `score_metrics` maps data to a bounded conviction nudge. Add
+   sources by subclassing `FundamentalsProvider` and updating `get_fundamentals`.
+5. **Never weaken `src/risk/guard.py`.** All orders must pass `RiskGuard.check`. If you change
    limits, update `tests/test_risk.py` and keep every rejection test passing.
 
 ## Hard rules for an autonomous agent

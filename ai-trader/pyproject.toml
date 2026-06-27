@@ -25,7 +25,7 @@ worker = ["apscheduler>=3.10"]
 backtest = ["vectorbt>=0.26", "backtesting>=0.3", "QuantLib>=1.33"]
 dev = ["pytest>=8.0"]
 # Everything needed to actually paper-trade live (no research extras)
-live = ["anthropic>=0.40", "langgraph>=0.2", "langchain-anthropic>=0.2", "langchain-mcp-adapters>=0.1", "mcp>=1.0", "alpaca-py>=0.30", "fastapi>=0.110", "uvicorn[standard]>=0.29", "apscheduler>=3.10"]
+live = ["anthropic>=0.40", "langgraph>=0.2", "langchain-anthropic>=0.2", "langchain-mcp-adapters>=0.1", "mcp>=1.0", "alpaca-py>=0.30", "fastapi>=0.110", "uvicorn[standard]>=0.29", "apscheduler>=3.10", "requests>=2.31"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
