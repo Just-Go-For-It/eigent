@@ -1,0 +1,35 @@
+[project]
+name = "ai-trader"
+version = "0.1.0"
+description = "LLM-driven stock & options trading agent (paper-first, Alpaca + MCP)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+# LLM + multi-agent runtime (TradingAgents-style graph)
+llm = ["anthropic>=0.40", "langgraph>=0.2", "langchain-anthropic>=0.2", "langchain-mcp-adapters>=0.1", "mcp>=1.0"]
+# Broker execution via Alpaca (paper + live)
+broker = ["alpaca-py>=0.30"]
+# Extra market data
+data = ["polygon-api-client>=1.14", "requests>=2.31"]
+# HTTP API + dashboard backend
+api = ["fastapi>=0.110", "uvicorn[standard]>=0.29"]
+# Always-on scheduler
+worker = ["apscheduler>=3.10"]
+# Research-grade backtesting (optional, heavier)
+backtest = ["vectorbt>=0.26", "backtesting>=0.3", "QuantLib>=1.33"]
+dev = ["pytest>=8.0"]
+# Everything needed to actually paper-trade live (no research extras)
+live = ["anthropic>=0.40", "langgraph>=0.2", "langchain-anthropic>=0.2", "langchain-mcp-adapters>=0.1", "mcp>=1.0", "alpaca-py>=0.30", "fastapi>=0.110", "uvicorn[standard]>=0.29", "apscheduler>=3.10"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.setuptools]
+packages = ["src"]
