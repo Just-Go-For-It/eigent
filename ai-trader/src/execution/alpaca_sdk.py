@@ -31,6 +31,27 @@ class AlpacaBroker(Broker):
             return Fill(order.symbol, order.side, order.qty, order.price,
                         order.qty * order.price)
 
+        if order.is_multileg:  # pragma: no cover - requires alpaca-py + network
+            from alpaca.trading.enums import OrderClass
+            from alpaca.trading.requests import OptionLegRequest
+
+            legs = [
+                OptionLegRequest(
+                    symbol=leg.symbol,
+                    side=OrderSide.BUY if leg.side == "buy" else OrderSide.SELL,
+                    ratio_qty=leg.ratio_qty,
+                )
+                for leg in order.legs
+            ]
+            req = MarketOrderRequest(
+                qty=order.qty, order_class=OrderClass.MLEG,
+                time_in_force=TimeInForce.DAY, legs=legs,
+            )
+            resp = self._client.submit_order(req)
+            qty = float(getattr(resp, "filled_qty", None) or order.qty)
+            price = float(getattr(resp, "filled_avg_price", None) or order.price)
+            return Fill(order.symbol or "mleg", order.side, qty, price, abs(qty) * price * 100.0)
+
         side = OrderSide.BUY if order.side == "buy" else OrderSide.SELL
         req = MarketOrderRequest(
             symbol=order.symbol, qty=order.qty, side=side, time_in_force=TimeInForce.DAY

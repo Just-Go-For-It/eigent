@@ -17,6 +17,7 @@ from ..data.fundamentals import FundamentalsProvider, score_metrics
 from ..risk.guard import OrderRequest, RiskGuard
 from ..strategies.base import Signal, Strategy
 from .llm import LLM
+from .sentiment import SentimentAnalyzer
 
 
 @dataclass
@@ -40,12 +41,14 @@ class TradingFirm:
         strategy: Strategy,
         config,
         fundamentals: FundamentalsProvider | None = None,
+        sentiment: SentimentAnalyzer | None = None,
     ):
         self.llm = llm
         self.guard = guard
         self.strategy = strategy
         self.config = config
         self.fundamentals = fundamentals
+        self.sentiment = sentiment or SentimentAnalyzer()
 
     # --- individual agents ----------------------------------------------------
     def _analyst(self, symbol: str, df: pd.DataFrame) -> Signal:
@@ -86,11 +89,19 @@ class TradingFirm:
         score += f_adj
         d.log("debate", f"score after fundamentals={score:+.3f}")
 
+        # Sentiment sub-agent over the news feed (bounded, secondary weight).
+        sent_adj, sent_label = 0.0, "sentiment: disabled"
+        if getattr(self.config, "enable_sentiment", True):
+            sent_adj, sent_label = self.sentiment.score(headlines)
+            d.log("sentiment-analyst", f"{sent_label} (adj={sent_adj:+.2f})")
+            score += 0.5 * sent_adj
+            d.log("debate", f"score after sentiment={score:+.3f}")
+
         # LLM narrative (mock or Claude) — reasons over the real data; commentary, not decision.
         note = self.llm.complete(
             system="You are a risk-aware trading analyst. Be concise.",
             prompt=f"Symbol {symbol}: technical signal={signal.action}, combined score={score:+.2f}. "
-            f"{f_rationale}. Headlines: {headlines or 'none'}. "
+            f"{f_rationale}. {sent_label}. Headlines: {headlines or 'none'}. "
             f"One sentence: is acting prudent now?",
             model=getattr(self.config, "model_smart", None),
         )

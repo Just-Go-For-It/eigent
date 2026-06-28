@@ -97,6 +97,7 @@ class Config:
     enable_polymarket: bool = field(default_factory=lambda: _get_bool("ENABLE_POLYMARKET", False))
     enable_finrl: bool = field(default_factory=lambda: _get_bool("ENABLE_FINRL", False))
     enable_fundamentals: bool = field(default_factory=lambda: _get_bool("ENABLE_FUNDAMENTALS", True))
+    enable_sentiment: bool = field(default_factory=lambda: _get_bool("ENABLE_SENTIMENT", True))
 
     # Account / sizing
     starting_equity_usd: float = field(

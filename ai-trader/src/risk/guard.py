@@ -27,17 +27,33 @@ _RTH_CLOSE_UTC = time(20, 0)
 
 
 @dataclass
+class OptionLeg:
+    """One leg of a multi-leg (mleg) option order."""
+
+    symbol: str  # OCC option symbol, e.g. AAPL240920C00150000
+    side: str  # "buy" | "sell"
+    ratio_qty: int = 1
+
+
+@dataclass
 class OrderRequest:
     symbol: str
     side: str  # "buy" | "sell"
     qty: float
-    price: float  # estimated fill price (per share, or per-contract premium)
+    price: float  # estimated fill price (per share, or NET premium per spread for mleg)
     asset_class: str = "equity"  # "equity" | "option"
     options_level: int = 0  # required options level for this order (0 for equities)
     is_close: bool = False  # closing/reducing an existing position (risk-reducing)
+    legs: list = field(default_factory=list)  # list[OptionLeg] for multi-leg option orders
+
+    @property
+    def is_multileg(self) -> bool:
+        return bool(self.legs)
 
     @property
     def notional(self) -> float:
+        # For a defined-risk spread this is a coarse premium-based cap (net debit/credit *
+        # 100 * qty), not the structure's max loss. Tighten per-strategy if needed.
         mult = 100.0 if self.asset_class == "option" else 1.0
         return abs(self.qty) * self.price * mult
 

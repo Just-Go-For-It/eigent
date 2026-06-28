@@ -54,6 +54,22 @@ def test_option_order_routes_to_place_option_order_with_100x_multiplier():
     broker._runner.close()
 
 
+def test_multileg_routes_to_place_option_order_with_legs():
+    from src.strategies.option_spreads import vertical_spread
+
+    broker, tools = make_broker(
+        {"place_option_order": '{"filled_qty": "1", "filled_avg_price": "3.0"}'}
+    )
+    order = vertical_spread("AAPL_C150", "AAPL_C160", qty=1, net_price=3.0)
+    fill = broker.submit(order)
+    args = tools["place_option_order"].calls[0]
+    assert "legs" in args and len(args["legs"]) == 2
+    assert args["legs"][0] == {"symbol": "AAPL_C150", "side": "buy", "ratio_qty": 1}
+    assert args["legs"][1]["side"] == "sell"
+    assert fill.notional == 300.0  # 1 * 3.0 * 100
+    broker._runner.close()
+
+
 def test_close_routes_to_close_position():
     broker, tools = make_broker({"close_position": "{}"})
     broker.submit(OrderRequest("AAPL", "sell", qty=5, price=150.0, is_close=True))

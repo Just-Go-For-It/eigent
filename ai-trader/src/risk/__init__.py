@@ -1,3 +1,3 @@
-from .guard import OrderRequest, RiskDecision, RiskGuard, SafetyMode
+from .guard import OptionLeg, OrderRequest, RiskDecision, RiskGuard, SafetyMode
 
-__all__ = ["OrderRequest", "RiskDecision", "RiskGuard", "SafetyMode"]
+__all__ = ["OptionLeg", "OrderRequest", "RiskDecision", "RiskGuard", "SafetyMode"]

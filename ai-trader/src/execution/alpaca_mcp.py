@@ -80,9 +80,24 @@ class AlpacaMCPBroker(Broker):
             "time_in_force": "day",
         }
 
+    @staticmethod
+    def _mleg_args(order: OrderRequest) -> dict:
+        # Multi-leg (mleg) option order: each leg carries its own OCC symbol, side, ratio.
+        return {
+            "legs": [
+                {"symbol": leg.symbol, "side": leg.side, "ratio_qty": leg.ratio_qty}
+                for leg in order.legs
+            ],
+            "quantity": order.qty,
+            "order_type": "market",
+            "time_in_force": "day",
+        }
+
     def submit(self, order: OrderRequest) -> Fill:
         if order.is_close:
             raw = self._call("close_position", {"symbol": order.symbol})
+        elif order.is_multileg:
+            raw = self._call("place_option_order", self._mleg_args(order))
         elif order.asset_class == "option":
             raw = self._call("place_option_order", self._option_args(order))
         else:

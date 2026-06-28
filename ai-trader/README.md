@@ -64,6 +64,19 @@ metrics + headlines from the [Financial Datasets API](https://docs.financialdata
 nudges the bull/bear conviction (bounded; it never bypasses risk). Without a key it uses a
 neutral mock so dry runs stay offline.
 
+### Sentiment sub-agent
+A sentiment node (`src/agents/sentiment.py`) scores the same news headlines into a bounded
+signal (default: deterministic lexicon, no deps/network; optional LLM mode). It adds a
+secondary nudge to the debate score and logs `[sentiment-analyst]`. Toggle with
+`ENABLE_SENTIMENT` (default on).
+
+### Multi-leg option orders
+`OrderRequest` carries `legs` (`OptionLeg`s) for multi-leg (`mleg`) spreads. Build them with
+`src/strategies/option_spreads.py` (`vertical_spread`, `bull_call_spread`, `bear_put_spread`);
+both the `alpaca_mcp` and `alpaca_sdk` backends route them (MCP → `place_option_order` with a
+`legs` array; SDK → `OrderClass.MLEG`). Spreads usually need `MAX_OPTIONS_LEVEL>=3` or
+RiskGuard rejects them.
+
 ---
 
 ## Architecture
@@ -90,8 +103,9 @@ Scheduler / TradingView webhook (optional signal)
 | `src/data/` | Mock provider (offline) + Alpaca/Polygon adapters (lazy) |
 | `src/strategies/` | `Strategy` interface + MA-crossover + options-income scanner |
 | `src/backtest/` | Vectorized backtester (no look-ahead, costs) + CLI |
-| `src/agents/` | LLM wrapper (Claude/mock) + the trading-firm pipeline |
+| `src/agents/` | LLM wrapper (Claude/mock) + firm pipeline + `sentiment.py` sub-agent |
 | `src/data/fundamentals.py` | Fundamentals + news analyst (Financial Datasets API; lazy) |
+| `src/strategies/option_spreads.py` | Multi-leg option order builders (verticals) |
 | `src/execution/` | Paper sim + `alpaca_mcp.py` (MCP) + `alpaca_sdk.py` (direct) + async bridge |
 | `src/pipeline.py` | One wired pass of the loop (shared by CLI + worker) |
 | `src/worker.py` | APScheduler always-on loop (the VPS/Railway brain) |
