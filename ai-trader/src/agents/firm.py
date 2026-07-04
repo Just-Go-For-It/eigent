@@ -48,7 +48,9 @@ class TradingFirm:
         self.strategy = strategy
         self.config = config
         self.fundamentals = fundamentals
-        self.sentiment = sentiment or SentimentAnalyzer()
+        self.sentiment = sentiment or SentimentAnalyzer(
+            llm=llm, use_llm=getattr(config, "sentiment_use_llm", False)
+        )
 
     # --- individual agents ----------------------------------------------------
     def _analyst(self, symbol: str, df: pd.DataFrame) -> Signal:

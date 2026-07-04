@@ -98,6 +98,7 @@ class Config:
     enable_finrl: bool = field(default_factory=lambda: _get_bool("ENABLE_FINRL", False))
     enable_fundamentals: bool = field(default_factory=lambda: _get_bool("ENABLE_FUNDAMENTALS", True))
     enable_sentiment: bool = field(default_factory=lambda: _get_bool("ENABLE_SENTIMENT", True))
+    sentiment_use_llm: bool = field(default_factory=lambda: _get_bool("SENTIMENT_USE_LLM", False))
 
     # Account / sizing
     starting_equity_usd: float = field(

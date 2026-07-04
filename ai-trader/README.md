@@ -66,9 +66,22 @@ neutral mock so dry runs stay offline.
 
 ### Sentiment sub-agent
 A sentiment node (`src/agents/sentiment.py`) scores the same news headlines into a bounded
-signal (default: deterministic lexicon, no deps/network; optional LLM mode). It adds a
-secondary nudge to the debate score and logs `[sentiment-analyst]`. Toggle with
-`ENABLE_SENTIMENT` (default on).
+signal and logs `[sentiment-analyst]`. Two modes:
+- **Lexicon** (default): deterministic, offline, no deps.
+- **LLM**: set `SENTIMENT_USE_LLM=true` (with `ANTHROPIC_API_KEY`) and Claude classifies the
+  headlines end-to-end. It short-circuits to neutral when there's no news (no wasted tokens).
+
+Toggle the node with `ENABLE_SENTIMENT` (default on); it only nudges the debate, never risk.
+
+### Scoring option spreads (backtest)
+Score vertical spreads without paid option history — each spread's entry debit / exit value is
+**Black-Scholes-modeled** (`src/backtest/bs.py`) along the underlying path:
+```bash
+python -m src.backtest.run --asset spread --strategy options_income --kind call --dte 30 --width 0.05
+```
+Outputs total P&L, trade count, win rate, avg P&L, and max drawdown per symbol
+(`src/backtest/options.py`). It scores strategy *shape* — validate against real chains before
+trading.
 
 ### Multi-leg option orders
 `OrderRequest` carries `legs` (`OptionLeg`s) for multi-leg (`mleg`) spreads. Build them with
@@ -102,7 +115,7 @@ Scheduler / TradingView webhook (optional signal)
 | `src/risk/guard.py` | **RiskGuard + Safety Mode — the non-bypassable money gate** |
 | `src/data/` | Mock provider (offline) + Alpaca/Polygon adapters (lazy) |
 | `src/strategies/` | `Strategy` interface + MA-crossover + options-income scanner |
-| `src/backtest/` | Vectorized backtester (no look-ahead, costs) + CLI |
+| `src/backtest/` | Equity backtester + `bs.py`/`options.py` spread scorer + CLI |
 | `src/agents/` | LLM wrapper (Claude/mock) + firm pipeline + `sentiment.py` sub-agent |
 | `src/data/fundamentals.py` | Fundamentals + news analyst (Financial Datasets API; lazy) |
 | `src/strategies/option_spreads.py` | Multi-leg option order builders (verticals) |

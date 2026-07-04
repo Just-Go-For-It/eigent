@@ -33,7 +33,7 @@ class SentimentAnalyzer:
     def score(self, headlines: list[str]) -> tuple[float, str]:
         if not headlines:
             return 0.0, "sentiment: neutral (no news)"
-        if self.use_llm:  # pragma: no cover - optional path
+        if self.use_llm:
             return self._score_llm(headlines)
         return self._score_lexicon(headlines)
 
@@ -52,7 +52,7 @@ class SentimentAnalyzer:
         label = "bullish" if score > 0.15 else "bearish" if score < -0.15 else "mixed"
         return score, f"sentiment: {label} ({pos}+/{neg}- across {len(headlines)} headlines)"
 
-    def _score_llm(self, headlines: list[str]) -> tuple[float, str]:  # pragma: no cover
+    def _score_llm(self, headlines: list[str]) -> tuple[float, str]:
         out = self.llm.complete(
             system="You are a financial news sentiment classifier. Reply with one word: "
             "bullish, bearish, or neutral.",
